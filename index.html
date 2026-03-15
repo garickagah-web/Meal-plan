@@ -605,10 +605,65 @@ function attachDayHandlers(){
   document.querySelectorAll('.grams-input').forEach(input=>{
     input.addEventListener('input', ()=>{
       const {day, slot, index} = input.dataset;
-      const val = Math.max(1, Number(input.value || 0));
+      const raw = input.value;
+      if(raw === ''){
+        meals[day][slot][Number(index)].grams = '';
+        saveAll();
+        return;
+      }
+      const val = Math.max(1, Number(raw || 0));
       meals[day][slot][Number(index)].grams = val;
       saveAll();
-      renderDays();
+
+      const item = input.closest('.meal-item');
+      const entry = meals[day][slot][Number(index)];
+      const totals = calcItem({catalogId: entry.catalogId, grams: val});
+
+      const stats = item.querySelectorAll('.stats-line span');
+      if(stats.length >= 4){
+        stats[0].textContent = `Ккал: ${totals.kcal}`;
+        stats[1].textContent = `Б: ${totals.p}`;
+        stats[2].textContent = `Ж: ${totals.f}`;
+        stats[3].textContent = `У: ${totals.c}`;
+      }
+
+      const currentDayCard = input.closest('.day');
+      if(currentDayCard){
+        const currentDayName = currentDayCard.dataset.day;
+        const sum = daySummary(currentDayName);
+        const dayBadge = currentDayCard.querySelector('.day-toggle .small');
+        if(dayBadge) dayBadge.textContent = `${sum.kcal} ккал`;
+      }
+
+      updateTopCard();
+    });
+
+    input.addEventListener('blur', ()=>{
+      const {day, slot, index} = input.dataset;
+      if(input.value === ''){
+        meals[day][slot][Number(index)].grams = 1;
+        input.value = 1;
+
+        const item = input.closest('.meal-item');
+        const entry = meals[day][slot][Number(index)];
+        const totals = calcItem({catalogId: entry.catalogId, grams: 1});
+        const stats = item.querySelectorAll('.stats-line span');
+        if(stats.length >= 4){
+          stats[0].textContent = `Ккал: ${totals.kcal}`;
+          stats[1].textContent = `Б: ${totals.p}`;
+          stats[2].textContent = `Ж: ${totals.f}`;
+          stats[3].textContent = `У: ${totals.c}`;
+        }
+        const currentDayCard = input.closest('.day');
+        if(currentDayCard){
+          const currentDayName = currentDayCard.dataset.day;
+          const sum = daySummary(currentDayName);
+          const dayBadge = currentDayCard.querySelector('.day-toggle .small');
+          if(dayBadge) dayBadge.textContent = `${sum.kcal} ккал`;
+        }
+        saveAll();
+        updateTopCard();
+      }
     });
   });
 }
